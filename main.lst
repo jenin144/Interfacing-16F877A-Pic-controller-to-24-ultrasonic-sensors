@@ -1,0 +1,2831 @@
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ;;final
+                      00002 
+Warning[205]: Found directive in column 1. (PROCESSOR)
+                      00003 PROCESSOR 16F877A
+Warning[205]: Found directive in column 1. (INCLUDE)
+                      00004 INCLUDE "P16F877A.INC"
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00564         LIST
+                      00005 
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   3731           00006 __CONFIG 0x3731
+                      00007 
+  00000033            00008 HUSNUM EQU 33
+  00000034            00009 LUSNUM EQU 34
+  00000050            00010 delay EQU 50
+  00000032            00011 TMR_VAL_L EQU 32 ; Low byte of 16-bit TMR1 value
+  00000033            00012 TMR_VAL_H EQU 33 ; High byte of 16-bit TMR1 value
+  00000039            00013 TEMP EQU 39 ; Temporary variable for calculations
+  00000040            00014 TEMP2 EQU 40 ; Second temporary variable for calculations
+                      00015 
+  00000043            00016 Num1 EQU 43 ; First number input
+  00000044            00017 divisor EQU 44 ; Divisor (28)
+  00000045            00018 Result EQU 45 ; Calculated result
+                      00019 
+  00000046            00020 TEMP11 EQU 46 ; Temporary variable for calculations
+  00000047            00021 TEMP22 EQU 47 ; Second temporary variable for calculations
+  00000049            00022 TEMP33 EQU 49 ; Second temporary variable for calculations
+  00000053            00023 COMBINED   EQU 53   ; Define COMBINED at address 0x23
+  00000054            00024 ECHO_PIN EQU 54
+                      00025 
+  00000050            00026 Msd EQU 50 ; Most significant digit of result
+  00000051            00027 Lsd EQU 51 ; Least significant digit of result
+  00000052            00028 hundred EQU 52 ; Mode for display selection
+                      00029 
+  00000077            00030 blink_count EQU 0x77
+  00000087            00031 delay_counter1 EQU 0x87
+  00000088            00032 delay_counter2 EQU 0x88
+  00000089            00033 delay_counter3 EQU 0x89
+                      00034 
+  00000035            00035 HIGH1 EQU 35
+  00000036            00036 HIGH2 EQU 36
+  00000037            00037 HIGH3 EQU 37
+  00000038            00038 HIGH4 EQU 38
+                      00039 
+                      00040 
+  00000060            00041 VAL1 EQU 60
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+  00000061            00042 VAL2 EQU 61
+  00000062            00043 VAL3 EQU 62
+  00000063            00044 VAL4 EQU 63
+  00000064            00045 VAL5 EQU 64
+  00000065            00046 VAL6 EQU 65
+  00000031            00047 VAL7 EQU 31
+  00000067            00048 VAL8 EQU 67
+  00000068            00049 VAL9 EQU 68
+  00000069            00050 VAL10 EQU 69
+  00000032            00051 VAL11 EQU 32
+  00000030            00052 VAL12 EQU 30
+                      00053 ;*
+  00000020            00054 VAL13 EQU 20
+  00000021            00055 VAL14 EQU 21
+  00000022            00056 VAL15 EQU 22
+  00000023            00057 VAL16 EQU 23
+  00000024            00058 VAL17 EQU 24
+                      00059 ;*
+  00000025            00060 VAL18 EQU 25
+  00000026            00061 VAL19 EQU 26
+  00000027            00062 VAL20 EQU 27
+  00000099            00063 VAL21 EQU 99
+  00000028            00064 VAL22 EQU 28
+  00000101            00065 VAL23 EQU 101
+  00000029            00066 VAL24 EQU 29
+                      00067 
+  00000054            00068 COUNTER EQU 54
+                      00069 
+                      00070 
+                      00071 
+                      00072 ;;;;;;;;;;;;;;;;;;
+                      00073 ; The instructions should start from here
+Warning[205]: Found directive in column 1. (ORG)
+                      00074 ORG 0x00
+Warning[203]: Found opcode in column 1. (GOTO)
+0000   2???           00075 GOTO init
+                      00076 
+Warning[205]: Found directive in column 1. (ORG)
+                      00077 ORG 0x04
+Warning[203]: Found opcode in column 1. (GOTO)
+0004   2???           00078 GOTO ISR
+                      00079 
+                      00080 ; The init for our program
+0005                  00081 init:
+Warning[205]: Found directive in column 1. (BANKSEL)
+0005   1683 1303      00082 BANKSEL TRISD ; Select bank 1
+Warning[203]: Found opcode in column 1. (CLRF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0007   0188           00083 CLRF TRISD ; Display port is output
+                      00084 
+Warning[205]: Found directive in column 1. (BANKSEL)
+0008   1683 1303      00085 BANKSEL TRISB ; Select bank 1
+Warning[203]: Found opcode in column 1. (BSF)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000A   1506           00086 BSF TRISB, 2 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000B   1586           00087 BSF TRISB, 3 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000C   1606           00088 BSF TRISB, 4 ; RB4 (echo pin) is input
+                      00089 
+Warning[205]: Found directive in column 1. (BANKSEL)
+000D   1683 1303      00090 BANKSEL TRISC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000F   1007           00091 BCF TRISC, 0 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0010   1087           00092 BCF TRISC, 1 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0011   1107           00093 BCF TRISC, 2 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0012   1187           00094 BCF TRISC, 3 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0013   1207           00095 BCF TRISC, 4 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0014   1287           00096 BCF TRISC, 5 ; RB4 (echo pin) is input
+                      00097 
+                      00098 ; Initialize TMR1
+Warning[205]: Found directive in column 1. (BANKSEL)
+0015   1283 1303      00099 BANKSEL T1CON ; Select bank 1
+Warning[203]: Found opcode in column 1. (MOVLW)
+0017   3031           00100 MOVLW 0x31 ; T1CON = 0b00110001 (Timer1 ON, prescaler 1:8)
+Warning[203]: Found opcode in column 1. (MOVWF)
+0018   0090           00101 MOVWF T1CON
+Warning[203]: Found opcode in column 1. (CLRF)
+0019   018F           00102 CLRF TMR1H ; Clear TMR1 High byte
+Warning[203]: Found opcode in column 1. (CLRF)
+001A   018E           00103 CLRF TMR1L ; Clear TMR1 Low byte
+Warning[203]: Found opcode in column 1. (BCF)
+001B   100C           00104 BCF PIR1, TMR1IF ; Clear TMR1 overflow flag
+Warning[203]: Found opcode in column 1. (BSF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001C   140C           00105 BSF PIE1, TMR1IE ; Enable TMR1 interrupt
+                      00106 
+Warning[205]: Found directive in column 1. (BANKSEL)
+001D   1283 1303      00107 BANKSEL PORTD
+                      00108 
+Warning[203]: Found opcode in column 1. (GOTO)
+001F   2???           00109 GOTO start
+                      00110 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00111 ; When interrupt happens the program will enter here
+0020                  00112 ISR:
+Warning[205]: Found directive in column 1. (BANKSEL)
+0020   1283 1303      00113 BANKSEL PIR1
+Warning[203]: Found opcode in column 1. (BCF)
+0022   100C           00114 BCF PIR1, TMR1IF ; Clear TMR1 interrupt flag
+Warning[205]: Found directive in column 1. (BANKSEL)
+0023   1283 1303      00115 BANKSEL PORTD
+Warning[203]: Found opcode in column 1. (retfie)
+0025   0009           00116 retfie
+                      00117 
+Warning[205]: Found directive in column 1. (INCLUDE)
+                      00118 INCLUDE "LCDIS_PORTD.INC" ; IF U WANT TO USE LCD ON PORT D
+                      00001 ;--------------------------------------------------------------
+                      00002 ;       LCDIS.INC               MPB     19-12-05
+                      00003 ;
+                      00004 ;       Include file to operate 16x2 LCD display
+                      00005 ;       Uses GPR 70 - 75
+                      00006 ;       
+                      00007 ;       Final version
+                      00008 ;--------------------------------------------------------------
+                      00009 
+  00000070            00010 Timer1  EQU     70              ; 1ms count register
+  00000071            00011 TimerX  EQU     71              ; Xms count register
+  00000072            00012 Var     EQU     72              ; Output variable
+  00000073            00013 Point   EQU     73              ; Program table pointer
+  00000074            00014 Select  EQU     74              ; Used to set or clear RS bit
+  00000075            00015 OutCod  EQU     75              ; Temp store for output code
+                      00016 
+  00000004            00017 RS      EQU     4               ; Register select output bit
+  00000005            00018 E       EQU     5               ; Enable display input
+                      00019 
+                      00020 
+                      00021 ;--------------------------------------------------------------
+                      00022 ;       1ms delay with 1us cycle time (1000 cycles)
+                      00023 ;--------------------------------------------------------------
+0026   30F9           00024 onems   MOVLW   D'249'          ; Count for 1ms delay 
+0027   00F0           00025         MOVWF   Timer1          ; Load count
+0028   0000           00026 loop1   NOP                     ; Pad for 4 cycle loop
+Message[305]: Using default destination of 1 (file).
+0029   0BF0           00027         DECFSZ  Timer1          ; Count
+002A   2???           00028         GOTO    loop1           ; until Z
+002B   0008           00029         RETURN                  ; and finish
+                      00030 
+                      00031 ;--------------------------------------------------------------
+                      00032 ;       Delay Xms
+                      00033 ;       Receives count in W, uses Onems
+                      00034 ;--------------------------------------------------------------
+002C   00F1           00035 xms     MOVWF   TimerX          ; Count for X ms
+002D   2???           00036 loopX   CALL    onems           ; Delay 1ms
+Message[305]: Using default destination of 1 (file).
+002E   0BF1           00037         DECFSZ  TimerX          ; Repeat X times 
+002F   2???           00038         GOTO    loopX           ; until Z
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0030   0008           00039         RETURN                  ; and finish
+                      00040 
+                      00041 ;--------------------------------------------------------------
+                      00042 ;       Generate data/command clock siganl E
+                      00043 ;--------------------------------------------------------------
+0031   1688           00044 pulseE  BSF     PORTD,E         ; Set E high
+0032   2???           00045         CALL    onems           ; Delay 1ms
+0033   1288           00046         BCF     PORTD,E         ; Reset E low
+0034   2???           00047         CALL    onems           ; Delay 1ms
+0035   0008           00048         RETURN                  ; done
+                      00049 
+                      00050 ;--------------------------------------------------------------
+                      00051 ;       Send a command byte in two nibbles from RB4 - RB7
+                      00052 ;       Receives command in W, uses PulseE and Onems
+                      00053 ;--------------------------------------------------------------
+0036   00F5           00054 send    MOVWF   OutCod          ; Store output code
+0037   39F0           00055         ANDLW   0F0             ; Clear low nybble
+0038   0088           00056         MOVWF   PORTD           ; Output high nybble
+0039   1A74           00057         BTFSC   Select,RS       ; Test RS bit
+003A   1608           00058         BSF     PORTD,RS        ; and set for data
+003B   2???           00059         CALL    pulseE          ; and clock display register
+003C   2???           00060         CALL    onems           ; wait 1ms for display
+                      00061 
+Message[305]: Using default destination of 1 (file).
+003D   0EF5           00062         SWAPF   OutCod          ; Swap low and high nybbles 
+003E   0875           00063         MOVF    OutCod,W        ; Retrieve output code
+003F   39F0           00064         ANDLW   0F0             ; Clear low nybble
+0040   0088           00065         MOVWF   PORTD           ; Output low nybble
+0041   1A74           00066         BTFSC   Select,RS       ; Test RS bit
+0042   1608           00067         BSF     PORTD,RS        ; and set for data
+0043   2???           00068         CALL    pulseE          ; and clock display register
+0044   2???           00069         CALL    onems           ; wait 1ms for display
+0045   0008           00070         RETURN                  ; done
+                      00071 
+                      00072 ;--------------------------------------------------------------
+                      00073 ;       Initialise the display
+                      00074 ;       Uses Send
+                      00075 ;--------------------------------------------------------------
+0046   3064           00076 inid    MOVLW   D'100'          ; Load count for 100ms delay
+0047   2???           00077         CALL    xms             ; and wait for display start
+0048   30F0           00078         MOVLW   0F0             ; Mask for select code
+0049   00F4           00079         MOVWF   Select          ; High nybble not masked
+                      00080 
+004A   3030           00081         MOVLW   0x30            ; Load initial nibble
+004B   0088           00082         MOVWF   PORTD           ; and output it to display
+004C   2???           00083         CALL    pulseE          ; Latch initial code
+004D   3005           00084         MOVLW   D'5'            ; Set delay 5ms
+004E   2???           00085         CALL    xms             ; and wait
+004F   2???           00086         CALL    pulseE          ; Latch initial code again
+0050   2???           00087         CALL    onems           ; Wait 1ms
+0051   2???           00088         CALL    pulseE          ; Latch initial code again
+0052   1208           00089         BCF     PORTD,4         ; Set 4-bit mode
+0053   2???           00090         CALL    pulseE          ; Latch it
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00091         
+0054   3028           00092         MOVLW   0x28            ; Set 4-bit mode, 2 lines
+0055   2???           00093         CALL    send            ; and send code
+0056   3008           00094         MOVLW   0x08            ; Switch off display
+0057   2???           00095         CALL    send            ; and send code
+0058   3001           00096         MOVLW   0x01            ; Code to clear display
+0059   2???           00097         CALL    send            ; and send code
+005A   3006           00098         MOVLW   0x06            ; Enable cursor auto inc  
+005B   2???           00099         CALL    send            ; and send code
+005C   3080           00100         MOVLW   0x80            ; Zero display address
+005D   2???           00101         CALL    send            ; and send code
+005E   300C           00102         MOVLW   0x0C            ; Turn on display  
+005F   2???           00103         CALL    send            ; and send code
+                      00104 
+0060   0008           00105         RETURN                  ; Done
+                      00106 
+                      00107 ;--------------------------------------------------------------
+                      00119 
+                      00120 ; The main code for our program
+0061                  00121 start:
+                      00122 
+Warning[205]: Found directive in column 1. (BANKSEL)
+0061   1283 1303      00123 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BSF)
+0063   1407           00124 BSF PORTC, 0 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+0064   1087           00125 BCF PORTC, 1 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+0065   1107           00126 BCF PORTC, 2 ; RB4 (echo pin) is input
+                      00127 
+0066   3001           00128  MOVLW 1     ; Load W with the value 2
+0067   00D4           00129  MOVWF ECHO_PIN
+                      00130  
+0068   01D4           00131  CLRF COUNTER
+                      00132 
+                      00133 
+                      00134 ;;;** STEP1 **
+                      00135 
+Warning[203]: Found opcode in column 1. (MOVLW)
+0069   3003           00136 MOVLW 3 ; Number of blinks 3
+Warning[203]: Found opcode in column 1. (MOVWF)
+006A   00F7           00137 MOVWF blink_count ; Store in a register
+006B                  00138 loopblink:
+                      00139 
+Warning[203]: Found opcode in column 1. (CALL)
+006B   2???           00140 CALL xms
+Warning[203]: Found opcode in column 1. (CALL)
+006C   2???           00141 CALL xms
+Warning[203]: Found opcode in column 1. (CALL)
+006D   2???           00142 CALL inid
+Warning[203]: Found opcode in column 1. (BCF)
+006E   1274           00143 BCF Select, RS ; set display command mode
+Warning[203]: Found opcode in column 1. (CALL)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+006F   2???           00144 CALL printWelcomeM_lcd
+Warning[203]: Found opcode in column 1. (MOVLW)
+0070   3032           00145 MOVLW 0x32 ; d'50'
+Warning[203]: Found opcode in column 1. (CALL)
+0071   2???           00146 CALL DELAY_W_10_MS ; delay 10ms * 50 = 500ms
+Warning[203]: Found opcode in column 1. (MOVLW)
+0072   300E           00147 MOVLW 0x0E ; cursor blink
+Warning[203]: Found opcode in column 1. (CALL)
+0073   2???           00148 CALL send
+Warning[203]: Found opcode in column 1. (DECFSZ)
+0074   0BF7           00149 DECFSZ blink_count, F ; Decrement blink_count
+Warning[203]: Found opcode in column 1. (Goto)
+0075   2???           00150 Goto loopblink ; Loop if not zero
+Warning[203]: Found opcode in column 1. (Goto)
+0076   2???           00151 Goto step2
+                      00152 
+                      00153 ;; 500000us = 500 ms= 0.5 sec   - > 50*4*10*250
+0077                  00154 DELAY_W
+Warning[203]: Found opcode in column 1. (MOVWF)
+0077   00B9           00155 MOVWF TEMP
+0078                  00156 loop_start
+                      00157 
+Warning[203]: Found opcode in column 1. (NOP)
+0078   0000           00158 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+0079   0000           00159 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007A   0000           00160 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007B   0000           00161 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007C   0000           00162 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007D   0000           00163 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007E   0000           00164 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+007F   0000           00165 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+0080   0000           00166 NOP
+Warning[203]: Found opcode in column 1. (NOP)
+0081   0000           00167 NOP
+                      00168 
+Warning[203]: Found opcode in column 1. (DECFSZ)
+Message[305]: Using default destination of 1 (file).
+0082   0BB9           00169 DECFSZ TEMP
+Warning[203]: Found opcode in column 1. (GOTO)
+0083   2???           00170 GOTO loop_start
+Warning[203]: Found opcode in column 1. (RETURN)
+0084   0008           00171 RETURN
+0085                  00172 DELAY_W_10_MS
+Warning[203]: Found opcode in column 1. (MOVWF)
+0085   00C0           00173 MOVWF TEMP2
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVLW)
+0086   30FA           00174 MOVLW 0xFA
+0087                  00175 lp_st
+                      00176 
+Warning[203]: Found opcode in column 1. (CALL)
+0087   2???           00177 CALL DELAY_W
+Warning[203]: Found opcode in column 1. (CALL)
+0088   2???           00178 CALL DELAY_W
+Warning[203]: Found opcode in column 1. (CALL)
+0089   2???           00179 CALL DELAY_W
+Warning[203]: Found opcode in column 1. (CALL)
+008A   2???           00180 CALL DELAY_W
+                      00181 
+                      00182 
+Warning[203]: Found opcode in column 1. (DECFSZ)
+Message[305]: Using default destination of 1 (file).
+008B   0BC0           00183 DECFSZ TEMP2
+Warning[203]: Found opcode in column 1. (GOTO)
+008C   2???           00184 GOTO lp_st
+Warning[203]: Found opcode in column 1. (RETURN)
+008D   0008           00185 RETURN
+                      00186 
+                      00187 ;;;** STEP 2 **
+008E                  00188 step2:
+                      00189 
+Warning[205]: Found directive in column 1. (BANKSEL)
+008E   1283 1303      00190 BANKSEL PORTC ; Select bank 1
+0090   1187           00191  BCF PORTC, 3 ; RB4 (echo pin) is input
+0091   1207           00192  BCF PORTC, 4 ; RB4 (echo pin) is input
+0092   1287           00193  BCF PORTC, 5 ; RB4 (echo pin) is input
+                      00194 
+                      00195 
+Warning[203]: Found opcode in column 1. (BTFSC)
+0093   1987           00196 BTFSC PORTC, 3        ; Test bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BSF)
+0094   1446           00197 BSF TEMP11, 0          ; If bit 3 is set, set bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BTFSS)
+0095   1D87           00198 BTFSS PORTC, 3        ; Test bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BCF)
+0096   1046           00199 BCF TEMP11, 0          ; If bit 3 is clear, clear bit 0 of TEMP3
+                      00200 
+                      00201 ; Save the value of bit 4 (PORTC4) to TEMP4
+Warning[203]: Found opcode in column 1. (BTFSC)
+0097   1A07           00202 BTFSC PORTC, 4        ; Test bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BSF)
+0098   1447           00203 BSF TEMP22, 0          ; If bit 4 is set, set bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BTFSS)
+0099   1E07           00204 BTFSS PORTC, 4        ; Test bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BCF)
+009A   1047           00205 BCF TEMP22, 0          ; If bit 4 is clear, clear bit 0 of TEMP4
+                      00206 
+                      00207 ; Save the value of bit 5 (PORTC5) to TEMP5
+Warning[203]: Found opcode in column 1. (BTFSC)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+009B   1A87           00208 BTFSC PORTC, 5        ; Test bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BSF)
+009C   1449           00209 BSF TEMP33, 0          ; If bit 5 is set, set bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BTFSS)
+009D   1E87           00210 BTFSS PORTC, 5        ; Test bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BCF)
+009E   1049           00211 BCF TEMP33, 0          ; If bit 5 is clear, clear bit 0 of TEMP5
+                      00212 
+009F                  00213 loop_selection_lines:
+                      00214 
+                      00215 
+                      00216 ;trig low - wait 2micro - trig high - wait 10micro -
+                      00217 
+009F                  00218 PULSE_trig_pin:
+Warning[205]: Found directive in column 1. (BANKSEL)
+009F   1283 1303      00219 BANKSEL PORTC ; Select bank 1
+                      00220 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00A1   1846           00221 BTFSC TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BCF)
+00A2   1187           00222 BCF PORTC, 3        ; If bit 0 of TEMP3 is set, set bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00A3   1C46           00223 BTFSS TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BSF)
+00A4   1587           00224 BSF PORTC, 3        ; If bit 0 of TEMP3 is clear, clear bit 3 of PORTC
+                      00225 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00A5   1847           00226 BTFSC TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BCF)
+00A6   1207           00227 BCF PORTC, 4        ; If bit 0 of TEMP4 is set, set bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00A7   1C47           00228 BTFSS TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BSF)
+00A8   1607           00229 BSF PORTC, 4        ; If bit 0 of TEMP4 is clear, clear bit 4 of PORTC
+                      00230 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00A9   1849           00231 BTFSC TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BCF)
+00AA   1287           00232 BCF PORTC, 5        ; If bit 0 of TEMP5 is set, set bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00AB   1C49           00233 BTFSS TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BSF)
+00AC   1687           00234 BSF PORTC, 5        ; If bit 0 of TEMP5 is clear, clear bit 5 of PORTC
+                      00235 
+Warning[203]: Found opcode in column 1. (NOP)
+00AD   0000           00236 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00AE   0000           00237 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[205]: Found directive in column 1. (BANKSEL)
+00AF   1283 1303      00238 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BTFSC)
+00B1   1846           00239 BTFSC TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BSF)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00B2   1587           00240 BSF PORTC, 3        ; If bit 0 of TEMP3 is set, set bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00B3   1C46           00241 BTFSS TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BCF)
+00B4   1187           00242 BCF PORTC, 3        ; If bit 0 of TEMP3 is clear, clear bit 3 of PORTC
+                      00243 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00B5   1847           00244 BTFSC TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BSF)
+00B6   1607           00245 BSF PORTC, 4        ; If bit 0 of TEMP4 is set, set bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00B7   1C47           00246 BTFSS TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BCF)
+00B8   1207           00247 BCF PORTC, 4        ; If bit 0 of TEMP4 is clear, clear bit 4 of PORTC
+                      00248 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00B9   1849           00249 BTFSC TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BSF)
+00BA   1687           00250 BSF PORTC, 5        ; If bit 0 of TEMP5 is set, set bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00BB   1C49           00251 BTFSS TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BCF)
+00BC   1287           00252 BCF PORTC, 5        ; If bit 0 of TEMP5 is clear, clear bit 5 of PORTC
+                      00253 
+Warning[203]: Found opcode in column 1. (NOP)
+00BD   0000           00254 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00BE   0000           00255 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00BF   0000           00256 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C0   0000           00257 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C1   0000           00258 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C2   0000           00259 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C3   0000           00260 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C4   0000           00261 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C5   0000           00262 NOP ; 1 us delay -> 4/ 4 MHZ
+Warning[203]: Found opcode in column 1. (NOP)
+00C6   0000           00263 NOP ; 1 us delay -> 4/ 4 MHZ
+                      00264 
+Warning[205]: Found directive in column 1. (BANKSEL)
+00C7   1283 1303      00265 BANKSEL PORTC ; Select bank 1
+                      00266 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00C9   1846           00267 BTFSC TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BCF)
+00CA   1187           00268 BCF PORTC, 3        ; If bit 0 of TEMP3 is set, set bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00CB   1C46           00269 BTFSS TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BSF)
+00CC   1587           00270 BSF PORTC, 3        ; If bit 0 of TEMP3 is clear, clear bit 3 of PORTC
+                      00271 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00CD   1847           00272 BTFSC TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BCF)
+00CE   1207           00273 BCF PORTC, 4        ; If bit 0 of TEMP4 is set, set bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00CF   1C47           00274 BTFSS TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BSF)
+00D0   1607           00275 BSF PORTC, 4        ; If bit 0 of TEMP4 is clear, clear bit 4 of PORTC
+                      00276 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00D1   1849           00277 BTFSC TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BCF)
+00D2   1287           00278 BCF PORTC, 5        ; If bit 0 of TEMP5 is set, set bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00D3   1C49           00279 BTFSS TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BSF)
+00D4   1687           00280 BSF PORTC, 5        ; If bit 0 of TEMP5 is clear, clear bit 5 of PORTC
+                      00281 
+Warning[203]: Found opcode in column 1. (CLRF)
+00D5   018F           00282 CLRF TMR1H ; Clear TMR1 again to start timing
+Warning[203]: Found opcode in column 1. (CLRF)
+00D6   018E           00283 CLRF TMR1L ; Clear TMR1 Low byte
+Warning[203]: Found opcode in column 1. (BCF)
+00D7   100C           00284 BCF PIR1, TMR1IF ; Clear TMR1 overflow flag
+                      00285 
+Warning[205]: Found directive in column 1. (BANKSEL)
+00D8   1283 1303      00286 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BTFSC)
+00DA   1846           00287 BTFSC TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BSF)
+00DB   1587           00288 BSF PORTC, 3        ; If bit 0 of TEMP3 is set, set bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00DC   1C46           00289 BTFSS TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BCF)
+00DD   1187           00290 BCF PORTC, 3        ; If bit 0 of TEMP3 is clear, clear bit 3 of PORTC
+                      00291 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00DE   1847           00292 BTFSC TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BSF)
+00DF   1607           00293 BSF PORTC, 4        ; If bit 0 of TEMP4 is set, set bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+00E0   1C47           00294 BTFSS TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BCF)
+00E1   1207           00295 BCF PORTC, 4        ; If bit 0 of TEMP4 is clear, clear bit 4 of PORTC
+                      00296 
+Warning[203]: Found opcode in column 1. (BTFSC)
+00E2   1849           00297 BTFSC TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BSF)
+00E3   1687           00298 BSF PORTC, 5        ; If bit 0 of TEMP5 is set, set bit 5 of PORTC
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (BTFSS)
+00E4   1C49           00299 BTFSS TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BCF)
+00E5   1287           00300 BCF PORTC, 5        ; If bit 0 of TEMP5 is clear, clear bit 5 of PORTC
+                      00301 
+                      00302 
+                      00303 
+Warning[205]: Found directive in column 1. (BANKSEL)
+00E6   1283 1303      00304 BANKSEL PORTB
+00E8                  00305 WAIT_FOR_ECHO_HIGH:
+                      00306 ;MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+00E8                  00307 NEXT:
+Warning[203]: Found opcode in column 1. (MOVF)
+00E8   0854           00308 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+00E9   3C01           00309 SUBLW 1             ; Subtract 1 from WREG, WREG now contains TEMP - 1
+Warning[203]: Found opcode in column 1. (BTFSS)
+00EA   1D03           00310 BTFSS STATUS, Z  
+Warning[203]: Found opcode in column 1. (GOTO)
+00EB   2???           00311 GOTO NEXT1 
+Warning[203]: Found opcode in column 1. (BTFSS)
+00EC   1D06           00312 BTFSS PORTB, 2 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+00ED   2???           00313 GOTO WAIT_FOR_ECHO_HIGH ; Loop until RB4 is high
+Warning[203]: Found opcode in column 1. (GOTO)
+00EE   2???           00314 GOTO NN
+                      00315 
+00EF                  00316 NEXT1:
+Warning[203]: Found opcode in column 1. (MOVF)
+00EF   0854           00317 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+00F0   3C02           00318 SUBLW 2             ; Subtract 1 from WREG, WREG now contains TEMP - 1
+Warning[203]: Found opcode in column 1. (BTFSS)
+00F1   1D03           00319 BTFSS STATUS, Z 
+Warning[203]: Found opcode in column 1. (GOTO)
+00F2   2???           00320 GOTO NEXT2 
+Warning[203]: Found opcode in column 1. (BTFSS)
+00F3   1D86           00321 BTFSS PORTB, 3 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+00F4   2???           00322 GOTO WAIT_FOR_ECHO_HIGH ; Loop until RB4 is high
+Warning[203]: Found opcode in column 1. (GOTO)
+00F5   2???           00323 GOTO NN
+                      00324 
+00F6                  00325 NEXT2:
+Warning[203]: Found opcode in column 1. (MOVF)
+00F6   0854           00326 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (BTFSS)
+00F7   1E06           00327 BTFSS PORTB, 4 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+00F8   2???           00328 GOTO WAIT_FOR_ECHO_HIGH ; Loop until RB4 is high
+                      00329 
+                      00330 ; Echo is high, store TMR1 value
+00F9                  00331 NN:
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (CLRF)
+00F9   018F           00332 CLRF TMR1H ; Clear TMR1 again to start timing
+Warning[203]: Found opcode in column 1. (CLRF)
+00FA   018E           00333 CLRF TMR1L ; Clear TMR1 Low byte
+Warning[203]: Found opcode in column 1. (BCF)
+00FB   100C           00334 BCF PIR1, TMR1IF ; Clear TMR1 overflow flag
+                      00335 
+00FC                  00336 WAIT_FOR_ECHO_LOW:
+                      00337 
+00FC                  00338 NEXT3:
+Warning[203]: Found opcode in column 1. (MOVF)
+00FC   0854           00339 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+00FD   3C01           00340 SUBLW 1             ; Subtract 1 from WREG, WREG now contains TEMP - 1
+Warning[203]: Found opcode in column 1. (BTFSS)
+00FE   1D03           00341 BTFSS STATUS, Z  
+Warning[203]: Found opcode in column 1. (GOTO)
+00FF   2???           00342 GOTO NEXT4 
+Warning[203]: Found opcode in column 1. (BTFSC)
+0100   1906           00343 BTFSC PORTB, 2 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+0101   2???           00344 GOTO WAIT_FOR_ECHO_LOW ; Loop until RB4 is high
+Warning[203]: Found opcode in column 1. (GOTO)
+0102   2???           00345 GOTO NN2
+                      00346 
+0103                  00347 NEXT4:
+Warning[203]: Found opcode in column 1. (MOVF)
+0103   0854           00348 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+0104   3C02           00349 SUBLW 2             ; Subtract 1 from WREG, WREG now contains TEMP - 1
+Warning[203]: Found opcode in column 1. (BTFSS)
+0105   1D03           00350 BTFSS STATUS, Z 
+Warning[203]: Found opcode in column 1. (GOTO)
+0106   2???           00351 GOTO NEXT5 
+Warning[203]: Found opcode in column 1. (BTFSC)
+0107   1986           00352 BTFSC PORTB, 3 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+0108   2???           00353 GOTO WAIT_FOR_ECHO_LOW ; Loop until RB4 is high
+Warning[203]: Found opcode in column 1. (GOTO)
+0109   2???           00354 GOTO NN2
+                      00355 
+010A                  00356 NEXT5:
+Warning[203]: Found opcode in column 1. (MOVF)
+010A   0854           00357 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (BTFSC)
+010B   1A06           00358 BTFSC PORTB, 4 ; Skip if echo pin is high
+Warning[203]: Found opcode in column 1. (GOTO)
+010C   2???           00359 GOTO WAIT_FOR_ECHO_LOW ; Loop until RB4 is high
+                      00360 
+010D                  00361 NN2:
+                      00362 ; MOVLW D'140'
+Warning[203]: Found opcode in column 1. (MOVF)
+010D   080E           00363 MOVF TMR1L, W ; Read TMR1 Low byte
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVWF)
+010E   00B2           00364 MOVWF TMR_VAL_L
+                      00365 
+                      00366 
+                      00367 ; MOVLW D'0'
+Warning[203]: Found opcode in column 1. (MOVF)
+010F   080F           00368 MOVF TMR1H, W ; Read TMR1 high byte
+Warning[203]: Found opcode in column 1. (MOVWF)
+0110   00B3           00369 MOVWF TMR_VAL_H
+                      00370 
+                      00371 
+                      00372 
+                      00373 ; Initialize divisor
+Warning[203]: Found opcode in column 1. (MOVLW)
+0111   3007           00374 MOVLW D'7'
+Warning[203]: Found opcode in column 1. (MOVWF)
+0112   00C4           00375 MOVWF divisor
+                      00376 
+                      00377  ; Clear counter
+0113   01D2           00378     CLRF hundred
+0114   01C5           00379         CLRF Result        ; total to Z
+                      00380 ;*****************
+                      00381 ; Check bit 0 of TMR_VAL_H
+0115   1C33           00382     BTFSS TMR_VAL_H, 0 
+0116   2???           00383     GOTO checkSecondBit
+0117   3023           00384         MOVLW D'35'  ; 256/7
+0118   07C5           00385         ADDWF Result , F
+0119                  00386 checkSecondBit
+0119   1CB3           00387     BTFSS TMR_VAL_H, 1 
+011A   2???           00388     GOTO checkthirdBit
+011B   1833           00389     BTFSC TMR_VAL_H, 0
+011C   2???           00390     GOTO minus10
+011D   3047           00391         MOVLW D'71'  ; 512/7
+011E   07C5           00392                 ADDWF Result , F
+                      00393     
+011F                  00394 checkthirdBit
+011F   1D33           00395     BTFSS TMR_VAL_H, 2 
+0120   2???           00396     GOTO div
+0121   1C33           00397     BTFSS TMR_VAL_H, 0
+0122   2???           00398     GOTO minus100   
+0123   308C           00399         MOVLW D'140' ; 1024/7
+0124   07C5           00400                 ADDWF Result , F
+0125   2???           00401     GOTO div 
+                      00402     
+                      00403 ;*****************
+0126                  00404 minus10:
+                      00405 
+0126   303D           00406         MOVLW D'61'  ; 512/7
+0127   07C5           00407                 ADDWF Result , F
+0128   2???           00408     GOTO div
+0129                  00409 minus100: 
+0129   3082           00410         MOVLW D'130'
+012A   07C5           00411         ADDWF Result , F
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00412    
+                      00413    
+                      00414 ;*******
+                      00415 
+012B                  00416 div:
+Warning[203]: Found opcode in column 1. (MOVF)
+012B   0844           00417 MOVF divisor, W ; get divisor
+Warning[203]: Found opcode in column 1. (BCF)
+012C   1003           00418 BCF STATUS, C ; clear C flag
+012D                  00419 sub1:
+Warning[203]: Found opcode in column 1. (INCF)
+Message[305]: Using default destination of 1 (file).
+012D   0AC5           00420 INCF Result ; increment result
+Warning[203]: Found opcode in column 1. (SUBWF)
+Message[305]: Using default destination of 1 (file).
+012E   02B2           00421 SUBWF TMR_VAL_L ; subtract divisor from TMR_VAL_L
+Warning[203]: Found opcode in column 1. (BTFSS)
+012F   1D03           00422 BTFSS STATUS, Z ; check if exact answer
+Warning[203]: Found opcode in column 1. (GOTO)
+0130   2???           00423 GOTO neg ; no
+Warning[203]: Found opcode in column 1. (GOTO)
+0131   2???           00424 GOTO SKIP  ; yes, display answer
+0132                  00425 neg:
+Warning[203]: Found opcode in column 1. (BTFSC)
+0132   1803           00426 BTFSC STATUS, C ; gone negative?
+Warning[203]: Found opcode in column 1. (GOTO)
+0133   2???           00427 GOTO sub1 ; no - repeat
+Warning[203]: Found opcode in column 1. (DECF)
+Message[305]: Using default destination of 1 (file).
+0134   03C5           00428 DECF Result ; correct the result
+Warning[203]: Found opcode in column 1. (MOVF)
+0135   0844           00429 MOVF divisor, W ; get divisor
+Warning[203]: Found opcode in column 1. (ADDWF)
+Message[305]: Using default destination of 1 (file).
+0136   07B2           00430 ADDWF TMR_VAL_L ; calculate remainder
+                      00431 
+0137                  00432 SKIP    
+                      00433 ;****************************************************
+Warning[203]: Found opcode in column 1. (CALL)
+0137   2???           00434 CALL SETVALUES
+                      00435 ;CALL print_lcd
+                      00436 
+                      00437 
+Warning[203]: Found opcode in column 1. (MOVLW)
+0138   3032           00438 MOVLW 0x32
+Warning[203]: Found opcode in column 1. (CALL)
+0139   2???           00439 CALL DELAY_W_10_MS
+                      00440 
+Warning[203]: Found opcode in column 1. (MOVLW)
+013A   3032           00441 MOVLW 0x32
+Warning[203]: Found opcode in column 1. (CALL)
+013B   2???           00442 CALL DELAY_W_10_MS
+                      00443 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00444 
+                      00445 ;INCF SEL, F
+                      00446 
+                      00447 
+                      00448     ; Combine the bits
+013C   01D3           00449     CLRF COMBINED         ; Clear the combined register
+                      00450 
+013D   0846           00451     MOVF TEMP11, W        ; Move TEMP11 to W
+013E   1846           00452     BTFSC TEMP11, 0       ; Test if TEMP11 is 1
+013F   1453           00453     BSF COMBINED, 0       ; If so, set bit 2 in COMBINED
+                      00454 
+0140   0847           00455     MOVF TEMP22, W        ; Move TEMP22 to W
+0141   1847           00456     BTFSC TEMP22, 0       ; Test if TEMP22 is 1
+0142   14D3           00457     BSF COMBINED, 1       ; If so, set bit 1 in COMBINED
+                      00458 
+0143   0849           00459     MOVF TEMP33, W        ; Move TEMP33 to W
+0144   1849           00460     BTFSC TEMP33, 0       ; Test if TEMP33 is 1
+0145   1553           00461     BSF COMBINED, 2       ; If so, set bit 0 in COMBINED
+                      00462 
+                      00463     ; Increment the combined value
+0146   0AD3           00464     INCF COMBINED, F      ; Increment the combined value
+                      00465     
+                      00466 
+                      00467  
+                      00468 
+                      00469     ; Separate the bits
+0147   1C53           00470     BTFSS COMBINED, 0     ; Test bit 2 of COMBINED
+0148   1046           00471     BCF TEMP11, 0         ; Clear bit 0 of TEMP11 if bit 2 of COMBINED is 0
+0149   1853           00472     BTFSC COMBINED, 0     ; Test bit 2 of COMBINED again
+014A   1446           00473     BSF TEMP11, 0         ; Set bit 0 of TEMP11 if bit 2 of COMBINED is 1
+                      00474 
+014B   1CD3           00475     BTFSS COMBINED, 1     ; Test bit 1 of COMBINED
+014C   1047           00476     BCF TEMP22, 0         ; Clear bit 0 of TEMP22 if bit 1 of COMBINED is 0
+014D   18D3           00477     BTFSC COMBINED, 1     ; Test bit 1 of COMBINED again
+014E   1447           00478     BSF TEMP22, 0         ; Set bit 0 of TEMP22 if bit 1 of COMBINED is 1
+                      00479 
+014F   1D53           00480     BTFSS COMBINED, 2     ; Test bit 0 of COMBINED
+0150   1049           00481     BCF TEMP33, 0         ; Clear bit 0 of TEMP33 if bit 0 of COMBINED is 0
+0151   1953           00482     BTFSC COMBINED, 2     ; Test bit 0 of COMBINED again
+0152   1449           00483     BSF TEMP33, 0         ; Set bit 0 of TEMP33 if bit 0 of COMBINED is 1
+                      00484     
+                      00485 
+Warning[205]: Found directive in column 1. (BANKSEL)
+0153   1283 1303      00486 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BTFSC)
+0155   1846           00487 BTFSC TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BSF)
+0156   1587           00488 BSF PORTC, 3        ; If bit 0 of TEMP3 is set, set bit 3 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+0157   1C46           00489 BTFSS TEMP11, 0      ; Test bit 0 of TEMP3
+Warning[203]: Found opcode in column 1. (BCF)
+0158   1187           00490 BCF PORTC, 3        ; If bit 0 of TEMP3 is clear, clear bit 3 of PORTC
+                      00491 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (BTFSC)
+0159   1847           00492 BTFSC TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BSF)
+015A   1607           00493 BSF PORTC, 4        ; If bit 0 of TEMP4 is set, set bit 4 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+015B   1C47           00494 BTFSS TEMP22, 0      ; Test bit 0 of TEMP4
+Warning[203]: Found opcode in column 1. (BCF)
+015C   1207           00495 BCF PORTC, 4        ; If bit 0 of TEMP4 is clear, clear bit 4 of PORTC
+                      00496 
+Warning[203]: Found opcode in column 1. (BTFSC)
+015D   1849           00497 BTFSC TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BSF)
+015E   1687           00498 BSF PORTC, 5        ; If bit 0 of TEMP5 is set, set bit 5 of PORTC
+Warning[203]: Found opcode in column 1. (BTFSS)
+015F   1C49           00499 BTFSS TEMP33, 0      ; Test bit 0 of TEMP5
+Warning[203]: Found opcode in column 1. (BCF)
+0160   1287           00500 BCF PORTC, 5        ; If bit 0 of TEMP5 is clear, clear bit 5 of PORTC
+                      00501 
+                      00502         ; Check if the value is 8 or more
+0161   0853           00503     MOVF COMBINED, W      ; Move the combined value to W
+0162   3C07           00504     SUBLW b'111'               ; Subtract 8 from W
+0163   1803           00505     BTFSC STATUS, C       ; Check the Carry flag (if combined >= 8, Carry is set)
+                      00506     ;CLRF COMBINED         ; Clear COMBINED if it is 8 or more
+                      00507 
+0164   2???           00508    GOTO loop_selection_lines ; If USNUM is not 24, go back to start
+                      00509 
+                      00510 ; Loop back to check the next sensor
+                      00511 ;CLRF SEL
+                      00512 
+                      00513 
+Warning[203]: Found opcode in column 1. (MOVF)
+0165   0854           00514 MOVF ECHO_PIN,W
+Warning[203]: Found opcode in column 1. (XORLW)
+0166   3A03           00515 XORLW 3                 ; Exclusive OR with 3
+Warning[203]: Found opcode in column 1. (BTFSS)
+0167   1D03           00516 BTFSS STATUS, Z         ; Skip next instruction if result is zero (ECHO_PIN == 3)
+                      00517 
+Warning[203]: Found opcode in column 1. (GOTO)
+0168   2???           00518 GOTO SKIP_SET
+Warning[203]: Found opcode in column 1. (MOVLW)
+0169   3001           00519 MOVLW 1                 ; Load WREG with 1
+Warning[203]: Found opcode in column 1. (MOVWF)
+016A   00D4           00520 MOVWF ECHO_PIN 
+                      00521  
+Warning[203]: Found opcode in column 1. (GOTO)
+016B   2???           00522 GOTO FINAL
+                      00523 
+                      00524 
+                      00525 
+016C                  00526 SKIP_SET:
+Warning[203]: Found opcode in column 1. (MOVF)
+016C   0854           00527 MOVF ECHO_PIN,W
+Warning[203]: Found opcode in column 1. (ADDLW)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+016D   3E01           00528 ADDLW 1     ; Load W with the value 2
+Warning[203]: Found opcode in column 1. (MOVWF)
+016E   00D4           00529 MOVWF ECHO_PIN
+                      00530 
+Warning[203]: Found opcode in column 1. (MOVF)
+016F   0854           00531 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+0170   3C02           00532 SUBLW 2             ; Subtract 1 from WREG
+Warning[203]: Found opcode in column 1. (BTFSS)
+0171   1D03           00533 BTFSS STATUS, Z     ; Skip next instruction if result is zero (TEMP == 1)
+Warning[203]: Found opcode in column 1. (GOTO)
+0172   2???           00534 GOTO EN3
+                      00535 
+Warning[205]: Found directive in column 1. (BANKSEL)
+0173   1283 1303      00536 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BCF)
+0175   1007           00537 BCF PORTC, 0 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BSF)
+0176   1487           00538 BSF PORTC, 1 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+0177   1107           00539 BCF PORTC, 2 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (GOTO)
+0178   2???           00540 GOTO FINAL
+                      00541 
+0179                  00542 EN3:
+Warning[203]: Found opcode in column 1. (MOVF)
+0179   0854           00543 MOVF ECHO_PIN, W        ; Move the value from TEMP to WREG
+Warning[203]: Found opcode in column 1. (SUBLW)
+017A   3C03           00544 SUBLW 3             ; Subtract 1 from WREG
+Warning[203]: Found opcode in column 1. (BTFSS)
+017B   1D03           00545 BTFSS STATUS, Z     ; Skip next instruction if result is zero (TEMP == 1)
+Warning[203]: Found opcode in column 1. (GOTO)
+017C   2???           00546 GOTO FINAL
+                      00547 
+Warning[205]: Found directive in column 1. (BANKSEL)
+017D   1283 1303      00548 BANKSEL PORTC ; Select bank 1
+Warning[203]: Found opcode in column 1. (BCF)
+017F   1007           00549 BCF PORTC, 0 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BCF)
+0180   1087           00550 BCF PORTC, 1 ; RB4 (echo pin) is input
+Warning[203]: Found opcode in column 1. (BSF)
+0181   1507           00551 BSF PORTC, 2 ; RB4 (echo pin) is input
+                      00552 
+                      00553 
+0182                  00554 FINAL:
+Warning[203]: Found opcode in column 1. (GOTO)
+0182   2???           00555 GOTO step2
+                      00556 
+                      00557 
+0183                  00558 loop:
+Warning[203]: Found opcode in column 1. (GOTO)
+0183   2???           00559 GOTO loop
+                      00560 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00561 
+0184                  00562 print_lcd:
+Warning[203]: Found opcode in column 1. (CALL)
+0184   2???           00563 CALL xms
+Warning[203]: Found opcode in column 1. (CALL)
+0185   2???           00564 CALL xms
+Warning[203]: Found opcode in column 1. (CALL)
+0186   2???           00565 CALL inid
+                      00566 
+Warning[203]: Found opcode in column 1. (CLRF)
+0187   01B3           00567 CLRF HUSNUM
+Warning[203]: Found opcode in column 1. (CLRF)
+0188   01B4           00568 CLRF LUSNUM
+                      00569 
+                      00570 ;^^^^^^^^^^^^^^^^1^^^^^^^^^^^^^^^^^^^^
+                      00571 
+Warning[203]: Found opcode in column 1. (BCF)
+0189   1274           00572 BCF Select, RS ; set display command mode
+                      00573 
+018A   3001           00574  MOVLW 0x01 ; clear display
+018B   2???           00575  CALL send ; send command
+                      00576 
+018C   300C           00577  MOVLW 0x0C ; turn on display without cursor
+018D   2???           00578  CALL send ; send command
+                      00579 
+                      00580 
+Warning[203]: Found opcode in column 1. (MOVLW)
+018E   3080           00581 MOVLW 0x80 ; code to home cursor
+Warning[203]: Found opcode in column 1. (CALL)
+018F   2???           00582 CALL send ; output to display
+Warning[203]: Found opcode in column 1. (MOVLW)
+0190   3005           00583 MOVLW D'5' ; move the maximum distance from the register
+Warning[203]: Found opcode in column 1. (MOVWF)
+0191   00B4           00584 MOVWF LUSNUM ; store value into USNUM
+                      00585 
+                      00586         ;; Call extreaction funcrion  to extract MSD LSD , Hundred
+0192   0835           00587         MOVFW  HIGH1   ;;;
+0193   00C5           00588         MOVWF Result
+                      00589  
+0194   2???           00590         CALL ExtractDigitss
+0195   2???           00591     CALL printdistancetoLCDZEROW
+                      00592 
+Warning[203]: Found opcode in column 1. (CLRF)
+0196   01B3           00593 CLRF HUSNUM
+Warning[203]: Found opcode in column 1. (CLRF)
+0197   01B4           00594 CLRF LUSNUM
+                      00595 
+                      00596 ;^^^^^^^^^^^^^^^^2^^^^^^^^^^^^^^^^^^^^
+Warning[203]: Found opcode in column 1. (MOVLW)
+0198   3001           00597 MOVLW D'1' ; move the SECOND MAX distance from the register
+Warning[203]: Found opcode in column 1. (MOVWF)
+0199   00B4           00598 MOVWF LUSNUM ; store value into USNUM
+Warning[204]: Found pseudo-op in column 1. (MOVFW)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+019A   0836           00599 MOVFW  HIGH2   ;;;
+Warning[203]: Found opcode in column 1. (MOVWF)
+019B   00C5           00600 MOVWF Result
+Warning[203]: Found opcode in column 1. (CALL)
+019C   2???           00601 CALL ExtractDigitss
+Warning[203]: Found opcode in column 1. (CALL)
+019D   2???           00602 CALL printdistancetoLCDZEROW
+Warning[203]: Found opcode in column 1. (CLRF)
+019E   01B3           00603 CLRF HUSNUM
+Warning[203]: Found opcode in column 1. (CLRF)
+019F   01B4           00604 CLRF LUSNUM
+                      00605 
+                      00606 ;^^^^^^^^^^^^^^^^3^^^^^^^^^^^^^^^^^^^^
+Warning[203]: Found opcode in column 1. (BCF)
+01A0   1274           00607 BCF Select, RS ; set display command mode
+Warning[203]: Found opcode in column 1. (MOVLW)
+01A1   30C0           00608 MOVLW 0xC0 ; code to move cursor
+Warning[203]: Found opcode in column 1. (CALL)
+01A2   2???           00609 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+01A3   3000           00610 MOVLW D'0' ; THIRD
+Warning[203]: Found opcode in column 1. (MOVWF)
+01A4   00B4           00611 MOVWF LUSNUM ; store value into USNUM
+Warning[204]: Found pseudo-op in column 1. (MOVFW)
+01A5   0837           00612 MOVFW  HIGH3   ;;;
+Warning[203]: Found opcode in column 1. (MOVWF)
+01A6   00C5           00613 MOVWF Result
+Warning[203]: Found opcode in column 1. (CALL)
+01A7   2???           00614 CALL ExtractDigitss
+Warning[203]: Found opcode in column 1. (CALL)
+01A8   2???           00615 CALL printdistancetoLCDZEROW
+                      00616 
+Warning[203]: Found opcode in column 1. (CLRF)
+01A9   01B3           00617 CLRF HUSNUM
+Warning[203]: Found opcode in column 1. (CLRF)
+01AA   01B4           00618 CLRF LUSNUM
+                      00619 ;^^^^^^^^^^^^^^^^4^^^^^^^^^^^^^^^^^^^^
+                      00620 
+Warning[203]: Found opcode in column 1. (MOVLW)
+01AB   3002           00621 MOVLW D'2' ; 4
+Warning[203]: Found opcode in column 1. (MOVWF)
+01AC   00B3           00622 MOVWF HUSNUM ; store value into USNUM
+Warning[203]: Found opcode in column 1. (MOVLW)
+01AD   3005           00623 MOVLW D'5' ; 4
+Warning[203]: Found opcode in column 1. (MOVWF)
+01AE   00B4           00624 MOVWF LUSNUM ; store value into USNUM
+Warning[203]: Found opcode in column 1. (MOVF)
+01AF   0838           00625 MOVF HIGH4,W   ;;;
+Warning[203]: Found opcode in column 1. (MOVWF)
+01B0   00C5           00626 MOVWF Result
+Warning[203]: Found opcode in column 1. (CALL)
+01B1   2???           00627 CALL ExtractDigitss
+Warning[203]: Found opcode in column 1. (CALL)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01B2   2???           00628 CALL printdistancetoLCDZEROW
+                      00629 
+                      00630 
+Warning[203]: Found opcode in column 1. (RETURN)
+01B3   0008           00631 RETURN
+                      00632 
+01B4                  00633 printdistancetoLCDZEROW:
+Warning[203]: Found opcode in column 1. (BSF)
+01B4   1674           00634 BSF Select, RS ; set data mode
+                      00635 
+Warning[203]: Found opcode in column 1. (MOVLW)
+01B5   3055           00636 MOVLW 'U' ; load 'U'
+Warning[203]: Found opcode in column 1. (CALL)
+01B6   2???           00637 CALL send ; send to LCD
+Warning[203]: Found opcode in column 1. (MOVLW)
+01B7   3053           00638 MOVLW 'S' ; load 'S'
+Warning[203]: Found opcode in column 1. (CALL)
+01B8   2???           00639 CALL send ; send to LCD
+                      00640 ; MOVLW '0' ; load '0'
+                      00641 ; CALL send ; send to LCD
+                      00642 
+                      00643 
+                      00644 ;* display Maximum US number ***
+                      00645 
+Warning[203]: Found opcode in column 1. (MOVF)
+01B9   0833           00646 MOVF HUSNUM, W ; load high digit result
+Warning[203]: Found opcode in column 1. (BTFSC)
+01BA   1903           00647 BTFSC STATUS, Z ; check if zero
+Warning[203]: Found opcode in column 1. (GOTO)
+01BB   2???           00648 GOTO secondnum ; don't display Msd if zero
+                      00649 
+Warning[203]: Found opcode in column 1. (ADDLW)
+01BC   3E30           00650 ADDLW 030 ; convert to ASCII
+Warning[203]: Found opcode in column 1. (BSF)
+01BD   1674           00651 BSF Select, RS ; select data mode
+Warning[203]: Found opcode in column 1. (CALL)
+01BE   2???           00652 CALL send ; send Msd
+                      00653 
+01BF                  00654 secondnum:
+Warning[203]: Found opcode in column 1. (MOVF)
+01BF   0834           00655 MOVF LUSNUM, W ; load low digit result
+Warning[203]: Found opcode in column 1. (ADDLW)
+01C0   3E30           00656 ADDLW 030 ; convert to ASCII
+Warning[203]: Found opcode in column 1. (BSF)
+01C1   1674           00657 BSF Select, RS ; select data mode
+Warning[203]: Found opcode in column 1. (CALL)
+01C2   2???           00658 CALL send
+                      00659 
+                      00660 
+                      00661 ;* Maximum US ndistance ***
+Warning[203]: Found opcode in column 1. (MOVLW)
+01C3   303A           00662 MOVLW ':' ; load ':'
+Warning[203]: Found opcode in column 1. (CALL)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01C4   2???           00663 CALL send ; send to LCD
+                      00664 
+01C5                  00665 display_msd_lsd:
+                      00666 ; Display hundred
+Warning[203]: Found opcode in column 1. (MOVF)
+01C5   0852           00667 MOVF hundred, W ; load high digit result
+Warning[203]: Found opcode in column 1. (BTFSC)
+01C6   1903           00668 BTFSC STATUS, Z ; check if zero
+Warning[203]: Found opcode in column 1. (GOTO)
+01C7   2???           00669 GOTO msd ; don't display hundred if zero
+Warning[203]: Found opcode in column 1. (ADDLW)
+01C8   3E30           00670 ADDLW 030 ; convert to ASCII
+Warning[203]: Found opcode in column 1. (BSF)
+01C9   1674           00671 BSF Select, RS ; select data mode
+Warning[203]: Found opcode in column 1. (CALL)
+01CA   2???           00672 CALL send
+                      00673 
+                      00674 ; Display 2-digit BCD result
+                      00675 
+01CB                  00676 msd:
+Warning[203]: Found opcode in column 1. (MOVF)
+01CB   0850           00677 MOVF Msd, W ; load high digit result
+Warning[203]: Found opcode in column 1. (BTFSC)
+01CC   1903           00678 BTFSC STATUS, Z ; check if zero
+Warning[203]: Found opcode in column 1. (GOTO)
+01CD   2???           00679 GOTO lowd ; don't display Msd if zero
+                      00680 
+Warning[203]: Found opcode in column 1. (ADDLW)
+01CE   3E30           00681 ADDLW 030 ; convert to ASCII
+Warning[203]: Found opcode in column 1. (BSF)
+01CF   1674           00682 BSF Select, RS ; select data mode
+Warning[203]: Found opcode in column 1. (CALL)
+01D0   2???           00683 CALL send ; send Msd
+                      00684 
+01D1                  00685 lowd:
+Warning[203]: Found opcode in column 1. (MOVF)
+01D1   0851           00686 MOVF Lsd, W ; load low digit result
+Warning[203]: Found opcode in column 1. (ADDLW)
+01D2   3E30           00687 ADDLW 030 ; convert to ASCII
+Warning[203]: Found opcode in column 1. (BSF)
+01D3   1674           00688 BSF Select, RS ; select data mode
+Warning[203]: Found opcode in column 1. (CALL)
+01D4   2???           00689 CALL send ; send Lsd
+                      00690 
+01D5                  00691 done_display:
+Warning[203]: Found opcode in column 1. (MOVLW)
+01D5   3020           00692 MOVLW ' ' ; load ':'
+Warning[203]: Found opcode in column 1. (CALL)
+01D6   2???           00693 CALL send ; send to LCD
+Warning[203]: Found opcode in column 1. (RETURN)
+01D7   0008           00694 RETURN
+                      00695 
+01D8                  00696 ExtractDigitss
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00697 ; Convert binary to BCD ...................................
+                      00698         ;MOVFW Result
+01D8                  00699 outres:
+01D8   0845           00700     MOVF Result, W     ; load result
+01D9   00D1           00701     MOVWF Lsd          ; store in low digit
+01DA   01D0           00702     CLRF Msd           ; high digit = 0
+01DB   1403           00703     BSF STATUS, C      ; set C flag
+01DC   300A           00704     MOVLW D'10'        ; load 10
+                      00705 
+01DD                  00706 again:
+Message[305]: Using default destination of 1 (file).
+01DD   02D1           00707     SUBWF Lsd          ; subtract 10 from result
+Message[305]: Using default destination of 1 (file).
+01DE   0AD0           00708     INCF Msd           ; increment high digit
+01DF   1803           00709     BTFSC STATUS, C    ; check if negative
+01E0   2???           00710     GOTO again         ; no, keep going
+Message[305]: Using default destination of 1 (file).
+01E1   07D1           00711     ADDWF Lsd          ; yes, add 10 back 
+Message[305]: Using default destination of 1 (file).
+01E2   03D0           00712     DECF Msd           ; decrement high digit
+                      00713 ;*****
+                      00714 
+                      00715     ; Check if Lsd exceeds 9
+01E3   0851           00716      MOVF Lsd, W         ; Move Lsd to W
+01E4   3C09           00717      SUBLW  d'9'        ; Subtract 10 from W
+01E5   1803           00718     BTFSC STATUS, C     ; If the result is zero or negative (borrow)
+01E6   2???           00719     GOTO CHECKHUNDRED            ; Return if Lsd is not greater than 9
+                      00720 
+                      00721     ; Decrement Lsd by 10
+01E7   3009           00722     MOVLW D'9'         ; Load 10 into W
+01E8   02D1           00723     SUBWF Lsd, F        ; Subtract 10 from Lsd
+                      00724 
+                      00725     ; Increment Msd by 1
+01E9   0AD0           00726     INCF Msd, F         ; Increment Msd
+                      00727 
+                      00728     ;;;; Check if Msd exceeds 9
+                      00729     
+01EA                  00730 CHECKHUNDRED    
+01EA   0850           00731      MOVF Msd, W         ; Move Lsd to W
+01EB   3C09           00732      SUBLW  d'9'        ; Subtract 10 from W
+01EC   1803           00733     BTFSC STATUS, C     ; If the result is zero or negative (borrow)
+01ED   0008           00734     return            ; Return if Lsd is not greater than 9
+                      00735 
+                      00736     ; Decrement Lsd by 10
+01EE   3009           00737     MOVLW D'9'         ; Load 10 into W
+01EF   02D0           00738     SUBWF Msd, F        ; Subtract 10 from Lsd
+                      00739 
+                      00740     ; Increment Msd by 1
+01F0   0AD2           00741     INCF hundred, F         ; Increment Msd
+                      00742     
+                      00743         ;movfw Lsd 
+                      00744 ;       movfw Msd
+                      00745         ;movfw hundred
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 24
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00746 
+                      00747 
+                      00748 
+Warning[203]: Found opcode in column 1. (return)
+01F1   0008           00749 return
+                      00750 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                      00751 
+01F2                  00752 printWelcomeM_lcd:
+                      00753 
+                      00754 ; MOVLW 0x01 ; clear display
+                      00755 ; CALL send ; send command
+                      00756 
+                      00757 ; MOVLW 0x0C ; turn on display without cursor
+                      00758 ; CALL send ; send command
+                      00759 
+Warning[203]: Found opcode in column 1. (MOVLW)
+01F2   3080           00760 MOVLW 0x80 ; set cursor at begining of 1st line
+Warning[203]: Found opcode in column 1. (CALL)
+01F3   2???           00761 CALL send ; send command
+                      00762 
+Warning[203]: Found opcode in column 1. (MOVLW)
+01F4   301C           00763 MOVLW 0x1C ; shift screen to the right
+Warning[203]: Found opcode in column 1. (CALL)
+01F5   2???           00764 CALL send ; send command
+Warning[203]: Found opcode in column 1. (MOVLW)
+01F6   301C           00765 MOVLW 0x1C ; shift screen to the right
+Warning[203]: Found opcode in column 1. (CALL)
+01F7   2???           00766 CALL send ; send command
+                      00767 
+                      00768 
+Warning[203]: Found opcode in column 1. (BSF)
+01F8   1674           00769 BSF Select, RS ; set data mode
+Warning[203]: Found opcode in column 1. (MOVLW)
+01F9   3020           00770 MOVLW ' '
+Warning[203]: Found opcode in column 1. (CALL)
+01FA   2???           00771 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+01FB   3020           00772 MOVLW ' '
+Warning[203]: Found opcode in column 1. (CALL)
+01FC   2???           00773 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+01FD   3057           00774 MOVLW 'W'
+Warning[203]: Found opcode in column 1. (CALL)
+01FE   2???           00775 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+01FF   3065           00776 MOVLW 'e'
+Warning[203]: Found opcode in column 1. (CALL)
+0200   2???           00777 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0201   306C           00778 MOVLW 'l'
+Warning[203]: Found opcode in column 1. (CALL)
+0202   2???           00779 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 25
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0203   3063           00780 MOVLW 'c'
+Warning[203]: Found opcode in column 1. (CALL)
+0204   2???           00781 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0205   306F           00782 MOVLW 'o'
+Warning[203]: Found opcode in column 1. (CALL)
+0206   2???           00783 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0207   306D           00784 MOVLW 'm'
+Warning[203]: Found opcode in column 1. (CALL)
+0208   2???           00785 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0209   3065           00786 MOVLW 'e'
+Warning[203]: Found opcode in column 1. (CALL)
+020A   2???           00787 CALL send
+                      00788 
+Warning[203]: Found opcode in column 1. (BCF)
+020B   1274           00789 BCF Select, RS ; set display command mode
+Warning[203]: Found opcode in column 1. (MOVLW)
+020C   30C0           00790 MOVLW 0xC0 ; code to move cursor to second line
+Warning[203]: Found opcode in column 1. (CALL)
+020D   2???           00791 CALL send
+                      00792 
+Warning[203]: Found opcode in column 1. (BSF)
+020E   1674           00793 BSF Select, RS ; set data mode
+                      00794 
+Warning[203]: Found opcode in column 1. (MOVLW)
+020F   3053           00795 MOVLW 'S'
+Warning[203]: Found opcode in column 1. (CALL)
+0210   2???           00796 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0211   3046           00797 MOVLW 'F'
+Warning[203]: Found opcode in column 1. (CALL)
+0212   2???           00798 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0213   3052           00799 MOVLW 'R'
+Warning[203]: Found opcode in column 1. (CALL)
+0214   2???           00800 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0215   3030           00801 MOVLW '0'
+Warning[203]: Found opcode in column 1. (CALL)
+0216   2???           00802 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0217   3034           00803 MOVLW '4'
+Warning[203]: Found opcode in column 1. (CALL)
+0218   2???           00804 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0219   3020           00805 MOVLW ' '
+Warning[203]: Found opcode in column 1. (CALL)
+021A   2???           00806 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+021B   304D           00807 MOVLW 'M'
+Warning[203]: Found opcode in column 1. (CALL)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 26
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+021C   2???           00808 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+021D   306F           00809 MOVLW 'o'
+Warning[203]: Found opcode in column 1. (CALL)
+021E   2???           00810 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+021F   3064           00811 MOVLW 'd'
+Warning[203]: Found opcode in column 1. (CALL)
+0220   2???           00812 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0221   3075           00813 MOVLW 'u'
+Warning[203]: Found opcode in column 1. (CALL)
+0222   2???           00814 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0223   306C           00815 MOVLW 'l'
+Warning[203]: Found opcode in column 1. (CALL)
+0224   2???           00816 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0225   3065           00817 MOVLW 'e'
+Warning[203]: Found opcode in column 1. (CALL)
+0226   2???           00818 CALL send
+Warning[203]: Found opcode in column 1. (MOVLW)
+0227   3073           00819 MOVLW 's'
+Warning[203]: Found opcode in column 1. (CALL)
+0228   2???           00820 CALL send
+                      00821 
+                      00822 
+Warning[203]: Found opcode in column 1. (return)
+0229   0008           00823 return
+                      00824 ;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                      00825 
+022A                  00826 FINDMAX4Dist:
+                      00827 
+                      00828 ;'''''''''''''''''''''''''''''''''''
+                      00829 
+                      00830 ;;; find the maximum 
+                      00831 
+                      00832 ; Initialize HIGH1 with the first value
+Warning[203]: Found opcode in column 1. (MOVF)
+022A   0860           00833 MOVF VAL1, W
+Warning[203]: Found opcode in column 1. (MOVWF)
+022B   00B5           00834 MOVWF HIGH1
+Warning[203]: Found opcode in column 1. (CLRF)
+022C   01B6           00835 CLRF HIGH2
+Warning[203]: Found opcode in column 1. (CLRF)
+022D   01B7           00836 CLRF HIGH3
+Warning[203]: Found opcode in column 1. (CLRF)
+022E   01B8           00837 CLRF HIGH4
+                      00838 
+Warning[203]: Found opcode in column 1. (MOVF)
+022F   0835           00839 MOVF HIGH1,W
+Warning[203]: Found opcode in column 1. (MOVF)
+0230   0836           00840 MOVF HIGH2,W
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 27
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[203]: Found opcode in column 1. (MOVF)
+0231   0837           00841 MOVF HIGH3,W
+Warning[203]: Found opcode in column 1. (MOVF)
+0232   0838           00842 MOVF HIGH4,W
+                      00843 
+                      00844 ; Start of loop to find the maximum value
+Warning[203]: Found opcode in column 1. (MOVF)
+0233   0861           00845 MOVF VAL2, W
+Warning[203]: Found opcode in column 1. (CALL)
+0234   2???           00846 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0235   0862           00847 MOVF VAL3, W
+Warning[203]: Found opcode in column 1. (CALL)
+0236   2???           00848 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0237   0863           00849 MOVF VAL4, W
+Warning[203]: Found opcode in column 1. (CALL)
+0238   2???           00850 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0239   0864           00851 MOVF VAL5, W
+Warning[203]: Found opcode in column 1. (CALL)
+023A   2???           00852 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+023B   0865           00853 MOVF VAL6, W
+Warning[203]: Found opcode in column 1. (CALL)
+023C   2???           00854 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+023D   0831           00855 MOVF VAL7, W
+Warning[203]: Found opcode in column 1. (CALL)
+023E   2???           00856 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+023F   0867           00857 MOVF VAL8, W
+Warning[203]: Found opcode in column 1. (CALL)
+0240   2???           00858 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0241   0868           00859 MOVF VAL9, W
+Warning[203]: Found opcode in column 1. (CALL)
+0242   2???           00860 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0243   0869           00861 MOVF VAL10, W
+Warning[203]: Found opcode in column 1. (CALL)
+0244   2???           00862 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0245   0832           00863 MOVF VAL11, W
+Warning[203]: Found opcode in column 1. (CALL)
+0246   2???           00864 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0247   0830           00865 MOVF VAL12, W
+Warning[203]: Found opcode in column 1. (CALL)
+0248   2???           00866 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0249   0820           00867 MOVF VAL13, W
+Warning[203]: Found opcode in column 1. (CALL)
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 28
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+024A   2???           00868 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+024B   0821           00869 MOVF VAL14, W
+Warning[203]: Found opcode in column 1. (CALL)
+024C   2???           00870 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+024D   0822           00871 MOVF VAL15, W
+Warning[203]: Found opcode in column 1. (CALL)
+024E   2???           00872 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+024F   0823           00873 MOVF VAL16, W
+Warning[203]: Found opcode in column 1. (CALL)
+0250   2???           00874 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0251   0824           00875 MOVF VAL17, W
+Warning[203]: Found opcode in column 1. (CALL)
+0252   2???           00876 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0253   0825           00877 MOVF VAL18, W
+Warning[203]: Found opcode in column 1. (CALL)
+0254   2???           00878 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0255   0826           00879 MOVF VAL19, W
+Warning[203]: Found opcode in column 1. (CALL)
+0256   2???           00880 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+0257   0827           00881 MOVF VAL20, W
+Warning[203]: Found opcode in column 1. (CALL)
+0258   2???           00882 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0259   0819           00883 MOVF VAL21, W
+Warning[203]: Found opcode in column 1. (CALL)
+025A   2???           00884 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+025B   0828           00885 MOVF VAL22, W
+Warning[203]: Found opcode in column 1. (CALL)
+025C   2???           00886 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+025D   0801           00887 MOVF VAL23, W
+Warning[203]: Found opcode in column 1. (CALL)
+025E   2???           00888 CALL CompareAndUpdate
+Warning[203]: Found opcode in column 1. (MOVF)
+025F   0829           00889 MOVF VAL24, W
+Warning[203]: Found opcode in column 1. (CALL)
+0260   2???           00890 CALL CompareAndUpdate
+                      00891 
+                      00892 
+                      00893 ; End of program
+Warning[203]: Found opcode in column 1. (CALL)
+0261   2???           00894 CALL FINISHH
+                      00895 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 29
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00896 
+                      00897 ;***********
+0262                  00898 CompareAndUpdate:
+                      00899     ; Compare W with HIGH1
+0262   00B9           00900     MOVWF TEMP ; Store the value in W to TEMP
+0263   0835           00901     MOVF HIGH1, W ; Move HIGH1 to W
+0264   0239           00902     SUBWF TEMP, W ; Subtract TEMP from W (W contains HIGH1)
+0265   1803           00903     BTFSC STATUS, C ; If the result is negative, skip the next instruction
+0266   2???           00904     GOTO UpdateHigh1 ; If W > HIGH1, update HIGH1 and shift down
+                      00905 
+                      00906     ; Compare W with HIGH2
+0267   0839           00907     MOVF TEMP, W ; Restore the original value from TEMP
+0268   00B9           00908     MOVWF TEMP ; Store the value in W to TEMP
+0269   0836           00909     MOVF HIGH2, W ; Move HIGH2 to W
+026A   0239           00910     SUBWF TEMP, W ; Subtract TEMP from W (W contains HIGH2)
+026B   1803           00911     BTFSC STATUS, C ; If the result is negative, skip the next instruction
+026C   2???           00912     GOTO UpdateHigh2 ; If W > HIGH2, update HIGH2 and shift down
+                      00913 
+                      00914     ; Compare W with HIGH3
+026D   0839           00915     MOVF TEMP, W ; Restore the original value from TEMP
+026E   00B9           00916     MOVWF TEMP ; Store the value in W to TEMP
+026F   0837           00917     MOVF HIGH3, W ; Move HIGH3 to W
+0270   0239           00918     SUBWF TEMP, W ; Subtract TEMP from W (W contains HIGH3)
+0271   1803           00919     BTFSC STATUS, C ; If the result is negative, skip the next instruction
+0272   2???           00920     GOTO UpdateHigh3 ; If W > HIGH3, update HIGH3 and shift down
+                      00921 
+                      00922     ; Compare W with HIGH4
+0273   0839           00923     MOVF TEMP, W ; Restore the original value from TEMP
+0274   00B9           00924     MOVWF TEMP ; Store the value in W to TEMP
+0275   0838           00925     MOVF HIGH4, W ; Move HIGH4 to W
+0276   0239           00926     SUBWF TEMP, W ; Subtract TEMP from W (W contains HIGH4)
+0277   1C03           00927     BTFSS STATUS, C ; If the result is negative, skip the next instruction
+0278   0008           00928     RETURN ; If W <= HIGH4, no update is needed
+                      00929 
+                      00930     ; Update HIGH4 if the new value is greater
+0279   0839           00931     MOVF TEMP, W ; Restore the original value from TEMP
+027A   00B8           00932     MOVWF HIGH4 ; Update HIGH4
+027B   0008           00933     RETURN
+                      00934 
+027C                  00935 UpdateHigh1:
+027C   0837           00936     MOVF HIGH3, W ; Move HIGH3 to W
+027D   00B8           00937     MOVWF HIGH4 ; Shift HIGH3 to HIGH4
+027E   0836           00938     MOVF HIGH2, W ; Move HIGH2 to W
+027F   00B7           00939     MOVWF HIGH3 ; Shift HIGH2 to HIGH3
+0280   0835           00940     MOVF HIGH1, W ; Move HIGH1 to W
+0281   00B6           00941     MOVWF HIGH2 ; Shift HIGH1 to HIGH2
+0282   0839           00942     MOVF TEMP, W ; Restore the original value from TEMP
+0283   00B5           00943     MOVWF HIGH1 ; Update HIGH1
+0284   0008           00944     RETURN
+                      00945 
+0285                  00946 UpdateHigh2:
+0285   0837           00947     MOVF HIGH3, W ; Move HIGH3 to W
+0286   00B8           00948     MOVWF HIGH4 ; Shift HIGH3 to HIGH4
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 30
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0287   0836           00949     MOVF HIGH2, W ; Move HIGH2 to W
+0288   00B7           00950     MOVWF HIGH3 ; Shift HIGH2 to HIGH3
+0289   0839           00951     MOVF TEMP, W ; Restore the original value from TEMP
+028A   00B6           00952     MOVWF HIGH2 ; Update HIGH2
+028B   0008           00953     RETURN
+                      00954 
+028C                  00955 UpdateHigh3:
+028C   0837           00956     MOVF HIGH3, W ; Move HIGH3 to W
+028D   00B8           00957     MOVWF HIGH4 ; Shift HIGH3 to HIGH4
+028E   0839           00958     MOVF TEMP, W ; Restore the original value from TEMP
+028F   00B7           00959     MOVWF HIGH3 ; Update HIGH3
+0290   0008           00960     RETURN
+                      00961 
+                      00962 ;********
+                      00963 
+0291                  00964 FINISHH:
+0291   0835           00965     MOVFW HIGH1
+0292   0836           00966     MOVFW HIGH2
+0293   0837           00967     MOVFW HIGH3
+0294   0838           00968     MOVFW HIGH4 
+                      00969 
+                      00970 
+0295   0008           00971         return
+                      00972         
+                      00973         
+0296                  00974 SETVALUES:
+                      00975 
+0296                  00976 MainLoop:
+                      00977     ; Check the value of the counter and perform actions
+0296   0854           00978     MOVF COUNTER, W ; Move COUNTER value to W
+                      00979 
+                      00980     ; Case 0
+0297   3C00           00981     SUBLW D'0'
+0298   1903           00982     BTFSC STATUS, Z
+                      00983    ; GOTO L1
+0299   2???           00984     CALL Case0
+                      00985 
+                      00986     
+029A                  00987 L1:
+                      00988     ; Case 1
+029A   0854           00989     MOVF COUNTER, W
+029B   3C01           00990     SUBLW D'1'
+029C   1903           00991     BTFSC STATUS, Z
+                      00992   ;  GOTO L2
+029D   2???           00993      CALL Case1
+                      00994 
+                      00995 
+Warning[207]: Found label after column 1. (L2)
+029E                  00996  L2:
+                      00997     ; Case 2
+029E   0854           00998     MOVF COUNTER, W
+029F   3C02           00999     SUBLW D'2'
+02A0   1903           01000     BTFSC STATUS, Z
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 31
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01001     ;   GOTO L3
+02A1   2???           01002         CALL Case2
+                      01003 
+                      01004     
+Warning[207]: Found label after column 1. (L3)
+02A2                  01005  L3:
+                      01006     ; Case 3
+02A2   0854           01007     MOVF COUNTER, W
+02A3   3C03           01008     SUBLW D'3'
+02A4   1903           01009     BTFSC STATUS, Z
+                      01010   ;      GOTO L4
+02A5   2???           01011         CALL Case3
+                      01012 
+                      01013 
+Warning[207]: Found label after column 1. (L4)
+02A6                  01014      L4:
+                      01015     ; Case 4
+02A6   0854           01016     MOVF COUNTER, W
+02A7   3C04           01017     SUBLW D'4'
+02A8   1903           01018     BTFSC STATUS, Z
+                      01019      ;   GOTO L5
+02A9   2???           01020         CALL Case4
+                      01021 
+Warning[207]: Found label after column 1. (L5)
+02AA                  01022  L5:
+                      01023     ; Case 5
+02AA   0854           01024     MOVF COUNTER, W
+02AB   3C05           01025     SUBLW D'5'
+02AC   1903           01026     BTFSC STATUS, Z
+                      01027      ;   GOTO L6
+02AD   2???           01028         CALL Case5
+                      01029 
+                      01030 
+Warning[207]: Found label after column 1. (L6)
+02AE                  01031      L6:
+                      01032     ; Case 6
+02AE   0854           01033     MOVF COUNTER, W
+02AF   3C06           01034     SUBLW D'6'
+02B0   1903           01035     BTFSC STATUS, Z
+                      01036       ;  GOTO L7
+02B1   2???           01037     CALL Case6
+                      01038 
+                      01039 
+Warning[207]: Found label after column 1. (L7)
+02B2                  01040      L7:
+                      01041     ; Case 7
+02B2   0854           01042     MOVF COUNTER, W
+02B3   3C07           01043     SUBLW D'7'
+02B4   1903           01044     BTFSC STATUS, Z
+                      01045       ;  GOTO L8
+02B5   2???           01046         CALL Case7
+                      01047 
+                      01048 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 32
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[207]: Found label after column 1. (L8)
+02B6                  01049      L8:
+                      01050     ; Case 8
+02B6   0854           01051     MOVF COUNTER, W
+02B7   3C08           01052     SUBLW D'8'
+02B8   1903           01053     BTFSC STATUS, Z
+                      01054    ;     GOTO L9
+02B9   2???           01055         CALL Case8
+                      01056 
+                      01057 
+Warning[207]: Found label after column 1. (L9)
+02BA                  01058  L9:  
+                      01059   ; Case 9
+02BA   0854           01060     MOVF COUNTER, W
+02BB   3C09           01061     SUBLW D'9'
+02BC   1903           01062     BTFSC STATUS, Z
+                      01063     ;    GOTO L10
+02BD   2???           01064         CALL Case9
+                      01065 
+                      01066 
+Warning[207]: Found label after column 1. (L10)
+02BE                  01067      L10:
+                      01068     ; Case 10
+02BE   0854           01069     MOVF COUNTER, W
+02BF   3C0A           01070     SUBLW D'10'
+02C0   1903           01071     BTFSC STATUS, Z
+                      01072      ;   GOTO L11
+02C1   2???           01073         CALL Case10
+                      01074 
+                      01075 
+Warning[207]: Found label after column 1. (L11)
+02C2                  01076      L11:
+                      01077     ; Case 11
+02C2   0854           01078     MOVF COUNTER, W
+02C3   3C0B           01079     SUBLW D'11'
+02C4   1903           01080     BTFSC STATUS, Z
+                      01081      ;   GOTO L12
+02C5   2???           01082         CALL Case11
+                      01083 
+                      01084 
+Warning[207]: Found label after column 1. (L12)
+02C6                  01085      L12:
+                      01086     ; Case 12
+02C6   0854           01087     MOVF COUNTER, W
+02C7   3C0C           01088     SUBLW D'12'
+02C8   1903           01089     BTFSC STATUS, Z
+                      01090       ;  GOTO L13
+02C9   2???           01091         CALL Case12
+                      01092 
+                      01093 
+Warning[207]: Found label after column 1. (L13)
+02CA                  01094      L13:
+                      01095     ; Case 13
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 33
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+02CA   0854           01096     MOVF COUNTER, W
+02CB   3C0D           01097     SUBLW D'13'
+02CC   1903           01098     BTFSC STATUS, Z
+                      01099      ;   GOTO L14
+02CD   2???           01100         CALL Case13
+                      01101 
+                      01102 
+Warning[207]: Found label after column 1. (L14)
+02CE                  01103      L14:
+                      01104     ; Case 14
+02CE   0854           01105     MOVF COUNTER, W
+02CF   3C0E           01106     SUBLW D'14'
+02D0   1903           01107     BTFSC STATUS, Z
+                      01108    ;     GOTO L15
+02D1   2???           01109         CALL Case14
+                      01110 
+                      01111 
+Warning[207]: Found label after column 1. (L15)
+02D2                  01112      L15:
+                      01113     ; Case 15
+02D2   0854           01114     MOVF COUNTER, W
+02D3   3C0F           01115     SUBLW D'15'
+02D4   1903           01116     BTFSC STATUS, Z
+                      01117     ;    GOTO L16
+02D5   2???           01118         CALL Case15
+                      01119 
+                      01120 
+Warning[207]: Found label after column 1. (L16)
+02D6                  01121      L16:
+                      01122     ; Case 16
+02D6   0854           01123     MOVF COUNTER, W
+02D7   3C10           01124     SUBLW D'16'
+02D8   1903           01125     BTFSC STATUS, Z
+                      01126      ;   GOTO L17
+02D9   2???           01127     CALL Case16
+                      01128 
+                      01129 
+Warning[207]: Found label after column 1. (L17)
+02DA                  01130      L17:
+                      01131     ; Case 17
+02DA   0854           01132     MOVF COUNTER, W
+02DB   3C11           01133     SUBLW D'17'
+02DC   1903           01134     BTFSC STATUS, Z
+                      01135    ;     GOTO L18
+02DD   2???           01136     CALL Case17
+                      01137 
+                      01138 
+Warning[207]: Found label after column 1. (L18)
+02DE                  01139      L18:
+                      01140     ; Case 18
+02DE   0854           01141     MOVF COUNTER, W
+02DF   3C12           01142     SUBLW D'18'
+02E0   1903           01143     BTFSC STATUS, Z
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 34
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01144     ;    GOTO L19
+02E1   2???           01145     CALL Case18
+                      01146 
+                      01147 
+Warning[207]: Found label after column 1. (L19)
+02E2                  01148      L19:
+                      01149     ; Case 19
+02E2   0854           01150     MOVF COUNTER, W
+02E3   3C13           01151     SUBLW D'19'
+02E4   1903           01152     BTFSC STATUS, Z
+                      01153     ;    GOTO L20
+02E5   2???           01154     CALL Case19
+                      01155 
+                      01156 
+Warning[207]: Found label after column 1. (L20)
+02E6                  01157      L20:
+                      01158     ; Case 20
+02E6   0854           01159     MOVF COUNTER, W
+02E7   3C14           01160     SUBLW D'20'
+02E8   1903           01161     BTFSC STATUS, Z
+                      01162      ;   GOTO L21
+02E9   2???           01163     CALL Case20
+                      01164 
+                      01165 
+Warning[207]: Found label after column 1. (L21)
+02EA                  01166      L21:
+                      01167     ; Case 21
+02EA   0854           01168     MOVF COUNTER, W
+02EB   3C15           01169     SUBLW D'21'
+02EC   1903           01170     BTFSC STATUS, Z
+                      01171     ;    GOTO L22
+02ED   2???           01172     CALL Case21
+                      01173 
+                      01174 
+Warning[207]: Found label after column 1. (L22)
+02EE                  01175      L22:
+                      01176     ; Case 22
+02EE   0854           01177     MOVF COUNTER, W
+02EF   3C16           01178     SUBLW D'22'
+02F0   1903           01179     BTFSC STATUS, Z
+                      01180       ;  GOTO L23
+02F1   2???           01181     CALL Case22
+                      01182 
+                      01183 
+Warning[207]: Found label after column 1. (L23)
+02F2                  01184      L23:
+                      01185     ; Case 23
+02F2   0854           01186     MOVF COUNTER, W
+02F3   3C17           01187     SUBLW D'23'
+02F4   1903           01188     BTFSC STATUS, Z
+                      01189     ;GOTO L24
+02F5   2???           01190     CALL Case23
+                      01191   ;  GOTO L24
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 35
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      01192 
+02F6                  01193 L24:
+02F6   0008           01194     RETURN ; Continue the loop if no case matched
+                      01195 
+02F7                  01196 Case0:
+02F7   0845           01197     MOVF Result, W
+02F8   00E0           01198     MOVWF VAL1
+02F9   0854           01199     MOVF COUNTER,W
+02FA   3E01           01200     ADDLW 1
+02FB   00D4           01201     MOVWF COUNTER
+02FC   0008           01202     RETURN
+                      01203 
+02FD                  01204 Case1:
+02FD   0845           01205     MOVF Result, W
+02FE   00E1           01206     MOVWF VAL2
+02FF   0854           01207     MOVF COUNTER,W
+0300   3E01           01208     ADDLW 1
+0301   00D4           01209     MOVWF COUNTER
+0302   0008           01210     RETURN
+                      01211 
+0303                  01212 Case2:
+0303   0845           01213     MOVF Result, W
+0304   00E2           01214     MOVWF VAL3
+0305   0854           01215      MOVF COUNTER,W
+0306   3E01           01216     ADDLW 1
+0307   00D4           01217     MOVWF COUNTER
+0308   0008           01218     RETURN
+                      01219 
+0309                  01220 Case3:
+0309   0845           01221     MOVF Result, W
+030A   00E3           01222     MOVWF VAL4
+030B   0854           01223     MOVF COUNTER,W
+030C   3E01           01224     ADDLW 1
+030D   00D4           01225     MOVWF COUNTER
+030E   0008           01226     RETURN
+                      01227 
+030F                  01228 Case4:
+030F   0845           01229     MOVF Result, W
+0310   00E4           01230     MOVWF VAL5
+0311   0854           01231    MOVF COUNTER,W
+0312   3E01           01232     ADDLW 1
+0313   00D4           01233     MOVWF COUNTER
+0314   0008           01234     RETURN
+                      01235 
+0315                  01236 Case5:
+0315   0845           01237     MOVF Result, W
+0316   00E5           01238     MOVWF VAL6
+0317   0854           01239    MOVF COUNTER,W
+0318   3E01           01240     ADDLW 1
+0319   00D4           01241     MOVWF COUNTER
+031A   0008           01242     RETURN
+                      01243 
+031B                  01244 Case6:
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 36
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+031B   0845           01245     MOVF Result, W
+031C   00B1           01246     MOVWF VAL7
+031D   0854           01247     MOVF COUNTER,W
+031E   3E01           01248     ADDLW 1
+031F   00D4           01249     MOVWF COUNTER
+0320   0008           01250     RETURN
+                      01251 
+0321                  01252 Case7:
+0321   0845           01253     MOVF Result, W
+0322   00E7           01254     MOVWF VAL8
+0323   0854           01255     MOVF COUNTER,W
+0324   3E01           01256     ADDLW 1
+0325   00D4           01257     MOVWF COUNTER
+0326   0008           01258     RETURN
+                      01259 
+0327                  01260 Case8:
+0327   0845           01261     MOVF Result, W
+0328   00E8           01262     MOVWF VAL9
+0329   0854           01263     MOVF COUNTER,W
+032A   3E01           01264     ADDLW 1
+032B   00D4           01265     MOVWF COUNTER
+032C   0008           01266     RETURN
+                      01267 
+032D                  01268 Case9:
+032D   0845           01269     MOVF Result, W
+032E   00E9           01270     MOVWF VAL10
+032F   0854           01271   MOVF COUNTER,W
+0330   3E01           01272     ADDLW 1
+0331   00D4           01273     MOVWF COUNTER
+0332   0008           01274     RETURN
+                      01275 
+0333                  01276 Case10:
+0333   0845           01277     MOVF Result, W
+0334   00B2           01278     MOVWF VAL11
+0335   0854           01279     MOVF COUNTER,W
+0336   3E01           01280     ADDLW 1
+0337   00D4           01281     MOVWF COUNTER
+0338   0008           01282     RETURN
+                      01283 
+0339                  01284 Case11:
+0339   0845           01285     MOVF Result, W
+033A   00B0           01286     MOVWF VAL12
+033B   0854           01287    MOVF COUNTER,W
+033C   3E01           01288     ADDLW 1
+033D   00D4           01289     MOVWF COUNTER
+033E   0008           01290     RETURN
+                      01291 
+033F                  01292 Case12:
+033F   0845           01293     MOVF Result, W
+0340   00A0           01294     MOVWF VAL13
+0341   0854           01295    MOVF COUNTER,W
+0342   3E01           01296     ADDLW 1
+0343   00D4           01297     MOVWF COUNTER
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 37
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0344   0008           01298     RETURN
+                      01299 
+0345                  01300 Case13:
+0345   0845           01301     MOVF Result, W
+0346   00A1           01302     MOVWF VAL14
+0347   0854           01303     MOVF COUNTER,W
+0348   3E01           01304     ADDLW 1
+0349   00D4           01305     MOVWF COUNTER
+034A   0008           01306     RETURN
+                      01307 
+034B                  01308 Case14:
+034B   0845           01309     MOVF Result, W
+034C   00A2           01310     MOVWF VAL15
+034D   0854           01311      MOVF COUNTER,W
+034E   3E01           01312     ADDLW 1
+034F   00D4           01313     MOVWF COUNTER
+0350   0008           01314     RETURN
+                      01315 
+0351                  01316 Case15:
+0351   0845           01317     MOVF Result, W
+0352   00A3           01318     MOVWF VAL16
+0353   0854           01319     MOVF COUNTER,W
+0354   3E01           01320     ADDLW 1
+0355   00D4           01321     MOVWF COUNTER
+0356   0008           01322     RETURN
+                      01323 
+0357                  01324 Case16:
+0357   0845           01325     MOVF Result, W
+0358   00A4           01326     MOVWF VAL17
+0359   0854           01327  MOVF COUNTER,W
+035A   3E01           01328     ADDLW 1
+035B   00D4           01329     MOVWF COUNTER
+035C   0008           01330     RETURN
+                      01331 
+035D                  01332 Case17:
+035D   0845           01333     MOVF Result, W
+035E   00A5           01334     MOVWF VAL18
+035F   0854           01335  MOVF COUNTER,W
+0360   3E01           01336     ADDLW 1
+0361   00D4           01337     MOVWF COUNTER
+0362   0008           01338     RETURN
+                      01339 
+0363                  01340 Case18:
+0363   0845           01341     MOVF Result, W
+0364   00A6           01342     MOVWF VAL19
+0365   0854           01343  MOVF COUNTER,W
+0366   3E01           01344     ADDLW 1
+0367   00D4           01345     MOVWF COUNTER
+0368   0008           01346     RETURN
+                      01347 
+0369                  01348 Case19:
+0369   0845           01349     MOVF Result, W
+036A   00A7           01350     MOVWF VAL20
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 38
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+036B   0854           01351    MOVF COUNTER,W
+036C   3E01           01352     ADDLW 1
+036D   00D4           01353     MOVWF COUNTER
+036E   0008           01354     RETURN
+                      01355 
+036F                  01356 Case20:
+036F   0845           01357     MOVF Result, W
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0370   0099           01358     MOVWF VAL21
+0371   0854           01359  MOVF COUNTER,W
+0372   3E01           01360     ADDLW 1
+0373   00D4           01361     MOVWF COUNTER
+0374   0008           01362     RETURN
+                      01363 
+0375                  01364 Case21:
+0375   0845           01365     MOVF Result, W
+0376   00A8           01366     MOVWF VAL22
+0377   0854           01367      MOVF COUNTER,W
+0378   3E01           01368     ADDLW 1
+0379   00D4           01369     MOVWF COUNTER
+037A   0008           01370     RETURN
+                      01371 
+037B                  01372 Case22:
+037B   0845           01373     MOVF Result, W
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+037C   0081           01374     MOVWF VAL23
+037D   0854           01375  MOVF COUNTER,W
+037E   3E01           01376     ADDLW 1
+037F   00D4           01377     MOVWF COUNTER
+0380   0008           01378     RETURN
+                      01379 
+0381                  01380 Case23:
+0381   0845           01381     MOVF Result, W
+0382   00A9           01382     MOVWF VAL24
+0383   0854           01383    MOVF COUNTER,W
+0384   3E01           01384     ADDLW 1
+0385   00D4           01385     MOVWF COUNTER
+                      01386 
+0386   2???           01387     CALL findmaxandprint
+                      01388     
+                      01389 
+                      01390     
+0387   0008           01391     RETURN
+                      01392    
+0388                  01393 findmaxandprint:
+                      01394 
+Warning[203]: Found opcode in column 1. (CALL)
+0388   2???           01395 CALL FINDMAX4Dist
+Warning[203]: Found opcode in column 1. (CALL)
+0389   2???           01396 CALL print_lcd
+                      01397 
+038A                  01398 GOTO step2
+                      01399 
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 39
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[205]: Found directive in column 1. (END)
+3731                  01400 END
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 40
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BRGH                              00000002
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHECKHUNDRED                      000001EA
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CIS                               00000003
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 41
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CKE                               00000006
+CKP                               00000004
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             0000009C
+CMIE                              00000006
+CMIF                              00000006
+COMBINED                          00000053
+COUNTER                           00000054
+CREN                              00000004
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            0000009D
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+Case0                             000002F7
+Case1                             000002FD
+Case10                            00000333
+Case11                            00000339
+Case12                            0000033F
+Case13                            00000345
+Case14                            0000034B
+Case15                            00000351
+Case16                            00000357
+Case17                            0000035D
+Case18                            00000363
+Case19                            00000369
+Case2                             00000303
+Case20                            0000036F
+Case21                            00000375
+Case22                            0000037B
+Case23                            00000381
+Case3                             00000309
+Case4                             0000030F
+Case5                             00000315
+Case6                             0000031B
+Case7                             00000321
+Case8                             00000327
+Case9                             0000032D
+CompareAndUpdate                  00000262
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+DELAY_W                           00000077
+DELAY_W_10_MS                     00000085
+D_A                               00000005
+D_NOT_A                           00000005
+E                                 00000005
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 42
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ECHO_PIN                          00000054
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+EN3                               00000179
+ExtractDigitss                    000001D8
+F                                 00000001
+FERR                              00000002
+FINAL                             00000182
+FINDMAX4Dist                      0000022A
+FINISHH                           00000291
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GOTO step2                        0000038A
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+HIGH1                             00000035
+HIGH2                             00000036
+HIGH3                             00000037
+HIGH4                             00000038
+HUSNUM                            00000033
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+ISR                               00000020
+L1                                0000029A
+L10                               000002BE
+L11                               000002C2
+L12                               000002C6
+L13                               000002CA
+L14                               000002CE
+L15                               000002D2
+L16                               000002D6
+L17                               000002DA
+L18                               000002DE
+L19                               000002E2
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 43
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+L2                                0000029E
+L20                               000002E6
+L21                               000002EA
+L22                               000002EE
+L23                               000002F2
+L24                               000002F6
+L3                                000002A2
+L4                                000002A6
+L5                                000002AA
+L6                                000002AE
+L7                                000002B2
+L8                                000002B6
+L9                                000002BA
+LUSNUM                            00000034
+Lsd                               00000051
+MainLoop                          00000296
+Msd                               00000050
+NEXT                              000000E8
+NEXT1                             000000EF
+NEXT2                             000000F6
+NEXT3                             000000FC
+NEXT4                             00000103
+NEXT5                             0000010A
+NN                                000000F9
+NN2                               0000010D
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+Num1                              00000043
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+OutCod                            00000075
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 44
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PEN                               00000002
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+PULSE_trig_pin                    0000009F
+Point                             00000073
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 45
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+RP0                               00000005
+RP1                               00000006
+RS                                00000004
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+R_NOT_W                           00000002
+R_W                               00000002
+Result                            00000045
+S                                 00000003
+SEN                               00000000
+SETVALUES                         00000296
+SKIP                              00000137
+SKIP_SET                          0000016C
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+SYNC                              00000004
+Select                            00000074
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 46
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TEMP                              00000039
+TEMP11                            00000046
+TEMP2                             00000040
+TEMP22                            00000047
+TEMP33                            00000049
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TMR_VAL_H                         00000033
+TMR_VAL_L                         00000032
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 47
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+Timer1                            00000070
+TimerX                            00000071
+UA                                00000001
+UpdateHigh1                       0000027C
+UpdateHigh2                       00000285
+UpdateHigh3                       0000028C
+VAL1                              00000060
+VAL10                             00000069
+VAL11                             00000032
+VAL12                             00000030
+VAL13                             00000020
+VAL14                             00000021
+VAL15                             00000022
+VAL16                             00000023
+VAL17                             00000024
+VAL18                             00000025
+VAL19                             00000026
+VAL2                              00000061
+VAL20                             00000027
+VAL21                             00000099
+VAL22                             00000028
+VAL23                             00000101
+VAL24                             00000029
+VAL3                              00000062
+VAL4                              00000063
+VAL5                              00000064
+VAL6                              00000065
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 48
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+VAL7                              00000031
+VAL8                              00000067
+VAL9                              00000068
+Var                               00000072
+W                                 00000000
+WAIT_FOR_ECHO_HIGH                000000E8
+WAIT_FOR_ECHO_LOW                 000000FC
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_CP_ON                            00001FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_FOSC_EXTRC                       00003FFF
+_FOSC_HS                          00003FFE
+_FOSC_LP                          00003FFC
+_FOSC_XT                          00003FFD
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1FOURTH                      00003BFF
+_WRT_256                          00003DFF
+_WRT_HALF                         000039FF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FFD
+__16F877A                         00000001
+__DEBUG                           1
+again                             000001DD
+blink_count                       00000077
+MPASM  5.43                          MAIN.ASM   7-14-2024  8:35:30         PAGE 49
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+checkSecondBit                    00000119
+checkthirdBit                     0000011F
+delay                             00000050
+delay_counter1                    00000087
+delay_counter2                    00000088
+delay_counter3                    00000089
+display_msd_lsd                   000001C5
+div                               0000012B
+divisor                           00000044
+done_display                      000001D5
+findmaxandprint                   00000388
+hundred                           00000052
+inid                              00000046
+init                              00000005
+loop                              00000183
+loop1                             00000028
+loopX                             0000002D
+loop_selection_lines              0000009F
+loop_start                        00000078
+loopblink                         0000006B
+lowd                              000001D1
+lp_st                             00000087
+minus10                           00000126
+minus100                          00000129
+msd                               000001CB
+neg                               00000132
+onems                             00000026
+outres                            000001D8
+printWelcomeM_lcd                 000001F2
+print_lcd                         00000184
+printdistancetoLCDZEROW           000001B4
+pulseE                            00000031
+secondnum                         000001BF
+send                              00000036
+start                             00000061
+step2                             0000008E
+sub1                              0000012D
+xms                               0000002C
+
+Errors   :     0
+Warnings :   472 reported,     0 suppressed
+Messages :    28 reported,     0 suppressed
+
+
